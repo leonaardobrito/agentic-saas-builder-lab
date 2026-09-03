@@ -21,7 +21,7 @@ Successfully implemented sign-in and sign-out server actions following TDD metho
 - features/auth/README.md - Documentation
 
 ### Configuration
-- vitest.config.ts - Test configuration
+- vitest.config.mjs - Test configuration (environment: 'node')
 - vitest.setup.ts - Test setup
 - .env.example - Environment template
 

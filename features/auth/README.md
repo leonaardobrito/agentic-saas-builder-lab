@@ -34,7 +34,7 @@ This document describes the implementation of sign-in and sign-out server action
 - `features/auth/__tests__/auth.integration.test.ts` - Integration tests (requires Supabase)
 
 ### Configuration
-- `vitest.config.ts` - Vitest configuration
+- `vitest.config.mjs` - Vitest configuration (environment: 'node')
 - `vitest.setup.ts` - Test setup file
 - `.env.example` - Environment variables template
 

@@ -93,7 +93,7 @@ StyleFlow uses the **classic test pyramid**:
 
 **Configuration Requirements:**
 
-- **Vitest:** Use `vitest.config.ts` with environment set to `jsdom` for components and `node` for pure logic.
+- **Vitest:** Use `vitest.config.mjs` with `environment: 'node'` for all tests. Override per-file with a `@vitest-environment jsdom` doc comment only when React component tests that require DOM are introduced. The `jsdom` environment was removed from the global config because it caused `webidl.util.markAsUncloneable is not a function` on Node.js 24 (GitHub Actions).
 - **Supabase Local:** Use `supabase start` to spin up a local PostgreSQL instance for integration tests. Migrations must be idempotent.
 - **Playwright:** Configure `playwright.config.ts` to run against the Vercel Preview URL or local dev server.
 
