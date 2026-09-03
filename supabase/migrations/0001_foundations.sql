@@ -1,10 +1,11 @@
 -- =============================================================================
 -- 0001_foundation.sql
 -- StyleFlow SaaS — Schema Foundation
--- Version: 1.0
--- Date: 2026-09-02
+-- Version: 1.2 (CORRECTED)
+-- Date: 2026-09-03
 -- Scope: MVP — Beauty / Salons & Aesthetic Centers
 -- Authority: Canonical database schema derived from domain-model.md
+-- Corrections: Based on domain-verification-report.md and business-rules-verification-report.md
 -- =============================================================================
 
 -- =============================================================================
@@ -103,6 +104,7 @@ create table public.customers (
 -- Customer Notes
 create table public.customer_notes (
   id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
   customer_id uuid not null references public.customers(id) on delete cascade,
   note text not null,
   created_at timestamptz not null default now(),
@@ -112,6 +114,7 @@ create table public.customer_notes (
 -- Anamnesis (beauty-specific sensitive data)
 create table public.anamnesis (
   id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
   customer_id uuid not null references public.customers(id) on delete cascade,
   allergies text,
   sensitivity text,
@@ -307,6 +310,7 @@ create table public.outbox_messages (
 -- Color Formulas (beauty-specific technical records)
 create table public.color_formulas (
   id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
   customer_id uuid not null references public.customers(id) on delete cascade,
   appointment_id uuid references public.appointments(id) on delete set null,
   formula text,
@@ -334,6 +338,16 @@ create table public.activity_feed (
   resolved_at timestamptz,
   assigned_to uuid references auth.users(id) on delete set null
 );
+
+-- =============================================================================
+-- UNIQUE CONSTRAINTS FOR COMPOSITE FOREIGN KEYS
+-- =============================================================================
+
+-- Required for composite foreign keys referencing these tables
+alter table public.professionals add unique (tenant_id, id);
+alter table public.customers add unique (tenant_id, id);
+alter table public.products add unique (tenant_id, id);
+alter table public.appointments add unique (tenant_id, id);
 
 -- =============================================================================
 -- COMPOSITE FOREIGN KEYS (Cross-tenant consistency enforcement)
@@ -365,6 +379,34 @@ alter table public.service_product_defaults
 add constraint fk_service_product_defaults_product
 foreign key (tenant_id, product_id)
 references public.products(tenant_id, id)
+on delete cascade;
+
+-- Customer Notes → Customers (composite FK)
+alter table public.customer_notes
+add constraint fk_customer_notes_customer
+foreign key (tenant_id, customer_id)
+references public.customers(tenant_id, id)
+on delete cascade;
+
+-- Anamnesis → Customers (composite FK)
+alter table public.anamnesis
+add constraint fk_anamnesis_customer
+foreign key (tenant_id, customer_id)
+references public.customers(tenant_id, id)
+on delete cascade;
+
+-- Color Formulas → Customers (composite FK)
+alter table public.color_formulas
+add constraint fk_color_formulas_customer
+foreign key (tenant_id, customer_id)
+references public.customers(tenant_id, id)
+on delete cascade;
+
+-- Appointment Items → Appointments (composite FK) - CORRECTED
+alter table public.appointment_items
+add constraint fk_appointment_items_appointment
+foreign key (tenant_id, appointment_id)
+references public.appointments(tenant_id, id)
 on delete cascade;
 
 -- =============================================================================
@@ -427,6 +469,19 @@ create index idx_stock_movements_origin on public.stock_movements (tenant_id, or
 -- Financial Events
 create index idx_financial_events_tenant_date on public.financial_events (tenant_id, date desc);
 create index idx_financial_events_tenant_origin on public.financial_events (tenant_id, origin_type, origin_id);
+
+-- Customer Notes (NEW)
+create index idx_customer_notes_tenant_customer on public.customer_notes (tenant_id, customer_id);
+
+-- Anamnesis (NEW)
+create index idx_anamnesis_tenant_customer on public.anamnesis (tenant_id, customer_id);
+
+-- Color Formulas (NEW)
+create index idx_color_formulas_tenant_customer on public.color_formulas (tenant_id, customer_id);
+
+-- Commission Rules (NEW)
+create index idx_commission_rules_tenant_professional on public.commission_rules (tenant_id, professional_id);
+create index idx_commission_rules_tenant_service on public.commission_rules (tenant_id, service_id);
 
 -- Outbox Messages
 create index idx_outbox_messages_status_scheduled on public.outbox_messages (tenant_id, status, scheduled_at);
@@ -495,6 +550,44 @@ as $$
       and m.role = target_role
   );
 $$;
+
+-- =============================================================================
+-- IMMUTABILITY TRIGGERS FOR APPEND-ONLY LEDGERS (BR-INV-002, BR-FIN-001)
+-- =============================================================================
+
+-- Function to prevent modifications on append-only tables
+create or replace function public.prevent_append_only_modifications()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  raise exception 'Table % is append-only. UPDATE and DELETE operations are not allowed.', tg_table_name;
+end;
+$$;
+
+-- Trigger for stock_movements (BR-INV-002)
+create trigger prevent_stock_movements_update
+  before update on public.stock_movements
+  for each row
+  execute function public.prevent_append_only_modifications();
+
+create trigger prevent_stock_movements_delete
+  before delete on public.stock_movements
+  for each row
+  execute function public.prevent_append_only_modifications();
+
+-- Trigger for financial_events (BR-FIN-001)
+create trigger prevent_financial_events_update
+  before update on public.financial_events
+  for each row
+  execute function public.prevent_append_only_modifications();
+
+create trigger prevent_financial_events_delete
+  before delete on public.financial_events
+  for each row
+  execute function public.prevent_append_only_modifications();
 
 -- =============================================================================
 -- ENABLE ROW LEVEL SECURITY
@@ -653,32 +746,20 @@ using (
 
 create policy customer_notes_select_policy on public.customer_notes
 for select
-using (public.is_tenant_member(
-  (select tenant_id from public.customers where id = customer_id)
-));
+using (public.is_tenant_member(tenant_id));
 
 create policy customer_notes_insert_policy on public.customer_notes
 for insert
-with check (public.is_tenant_member(
-  (select tenant_id from public.customers where id = customer_id)
-));
+with check (public.is_tenant_member(tenant_id));
 
 create policy customer_notes_update_policy on public.customer_notes
 for update
-using (public.is_tenant_member(
-  (select tenant_id from public.customers where id = customer_id)
-));
+using (public.is_tenant_member(tenant_id));
 
 create policy customer_notes_delete_policy on public.customer_notes
 for delete
 using (
-  public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'owner'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'admin'
-  )
+  public.has_role(tenant_id, 'owner') or public.has_role(tenant_id, 'admin')
 );
 
 -- =============================================================================
@@ -689,27 +770,19 @@ using (
 create policy anamnesis_select_policy on public.anamnesis
 for select
 using (
-  public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'owner'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'admin'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'manager'
-  ) or (
-    public.has_role(
-      (select tenant_id from public.customers where id = customer_id),
-      'professional'
-    )
+  public.has_role(tenant_id, 'owner') 
+  or public.has_role(tenant_id, 'admin')
+  or public.has_role(tenant_id, 'manager')
+  or (
+    public.has_role(tenant_id, 'professional')
     and exists (
       select 1 from public.appointments a
-      where a.customer_id = customer_id
+      where a.customer_id = anamnesis.customer_id
+        and a.tenant_id = anamnesis.tenant_id
         and a.professional_id in (
           select id from public.professionals
           where user_id = auth.uid()
-            and tenant_id = (select tenant_id from public.customers where id = customer_id)
+            and tenant_id = anamnesis.tenant_id
         )
     )
   )
@@ -719,43 +792,24 @@ using (
 create policy anamnesis_insert_policy on public.anamnesis
 for insert
 with check (
-  public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'owner'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'admin'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'manager'
-  )
+  public.has_role(tenant_id, 'owner')
+  or public.has_role(tenant_id, 'admin')
+  or public.has_role(tenant_id, 'manager')
 );
 
 create policy anamnesis_update_policy on public.anamnesis
 for update
 using (
-  public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'owner'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'admin'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'manager'
-  )
+  public.has_role(tenant_id, 'owner')
+  or public.has_role(tenant_id, 'admin')
+  or public.has_role(tenant_id, 'manager')
 );
 
 create policy anamnesis_delete_policy on public.anamnesis
 for delete
 using (
-  public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'owner'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'admin'
-  )
+  public.has_role(tenant_id, 'owner')
+  or public.has_role(tenant_id, 'admin')
 );
 
 -- =============================================================================
@@ -1035,32 +1089,20 @@ using (public.is_tenant_member(tenant_id));
 
 create policy color_formulas_select_policy on public.color_formulas
 for select
-using (public.is_tenant_member(
-  (select tenant_id from public.customers where id = customer_id)
-));
+using (public.is_tenant_member(tenant_id));
 
 create policy color_formulas_insert_policy on public.color_formulas
 for insert
-with check (public.is_tenant_member(
-  (select tenant_id from public.customers where id = customer_id)
-));
+with check (public.is_tenant_member(tenant_id));
 
 create policy color_formulas_update_policy on public.color_formulas
 for update
-using (public.is_tenant_member(
-  (select tenant_id from public.customers where id = customer_id)
-));
+using (public.is_tenant_member(tenant_id));
 
 create policy color_formulas_delete_policy on public.color_formulas
 for delete
 using (
-  public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'owner'
-  ) or public.has_role(
-    (select tenant_id from public.customers where id = customer_id),
-    'admin'
-  )
+  public.has_role(tenant_id, 'owner') or public.has_role(tenant_id, 'admin')
 );
 
 -- =============================================================================
