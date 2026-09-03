@@ -90,7 +90,7 @@ export async function signInAction(
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.errors?.[0]?.message || error.issues?.[0]?.message || 'Erro de validação.',
       };
     }
 

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { redirect } from 'next/navigation';
+import { createServerClient } from '@/lib/supabase/server';
 import { signInAction } from '../presentation/actions/sign-in.action';
 import { signOutAction } from '../presentation/actions/sign-out.action';
 
@@ -71,8 +73,6 @@ describe('Authentication Actions (Unit Tests)', () => {
   });
 
   describe('signInAction - Authentication Logic', () => {
-    const { createServerClient } = await import('@/lib/supabase/server');
-
     beforeEach(() => {
       vi.clearAllMocks();
     });
@@ -162,9 +162,6 @@ describe('Authentication Actions (Unit Tests)', () => {
   });
 
   describe('signOutAction', () => {
-    const { createServerClient } = await import('@/lib/supabase/server');
-    const { redirect } = await import('next/navigation');
-
     beforeEach(() => {
       vi.clearAllMocks();
     });
@@ -184,3 +181,4 @@ describe('Authentication Actions (Unit Tests)', () => {
     });
   });
 });
+

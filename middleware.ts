@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes
-  const publicRoutes = ['/login', '/register'];
+  const publicRoutes = ['/login', '/register', '/logout'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
   const isAuthApiRoute = pathname.startsWith('/api/auth');
 
