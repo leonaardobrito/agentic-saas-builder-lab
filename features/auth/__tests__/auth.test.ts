@@ -94,6 +94,7 @@ describe('Authentication Actions (Unit Tests)', () => {
         },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(createServerClient).mockResolvedValue(mockSupabase as any);
 
       const validInput = {
@@ -120,6 +121,7 @@ describe('Authentication Actions (Unit Tests)', () => {
         },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(createServerClient).mockResolvedValue(mockSupabase as any);
 
       const invalidInput = {
@@ -145,6 +147,7 @@ describe('Authentication Actions (Unit Tests)', () => {
         },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(createServerClient).mockResolvedValue(mockSupabase as any);
 
       const unconfirmedInput = {
@@ -173,6 +176,7 @@ describe('Authentication Actions (Unit Tests)', () => {
         },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(createServerClient).mockResolvedValue(mockSupabase as any);
 
       await expect(signOutAction()).rejects.toThrow('NEXT_REDIRECT: /login');

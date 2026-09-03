@@ -1,6 +1,5 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { signInSchema } from '../../schemas/auth.schemas';
 import type { ActionResponse } from '@/lib/types/action.types';
@@ -90,7 +89,7 @@ export async function signInAction(
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors?.[0]?.message || error.issues?.[0]?.message || 'Erro de validação.',
+        error: error.issues?.[0]?.message || 'Erro de validação.',
       };
     }
 

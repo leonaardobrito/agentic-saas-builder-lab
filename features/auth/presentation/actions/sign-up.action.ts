@@ -147,7 +147,7 @@ export async function signUpAction(
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors?.[0]?.message || error.issues?.[0]?.message || 'Erro de validação.',
+        error: error.issues?.[0]?.message || 'Erro de validação.',
       };
     }
 
