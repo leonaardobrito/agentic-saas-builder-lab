@@ -1,0 +1,43 @@
+# .github/labeler.yml
+# Configuração para actions/labeler
+
+domain: auth:
+  - changed-files:
+      - any-glob-to-any-file: 'features/auth/**'
+
+domain: scheduling:
+  - changed-files:
+      - any-glob-to-any-file: 'features/appointments/**'
+
+domain: customer:
+  - changed-files:
+      - any-glob-to-any-file: 'features/customers/**'
+
+domain: inventory:
+  - changed-files:
+      - any-glob-to-any-file: 'features/inventory/**'
+
+domain: finance:
+  - changed-files:
+      - any-glob-to-any-file: 'features/finance/**'
+
+domain: communication:
+  - changed-files:
+      - any-glob-to-any-file: 'features/communication/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: 'docs/**'
+
+testing:
+  - changed-files:
+      - any-glob-to-any-file: '**/__tests__/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: 'package.json'
+      - any-glob-to-any-file: 'package-lock.json'

@@ -1,0 +1,107 @@
+# .github/labels.yml
+# Labels para issues e PRs
+
+# Categoria de Tipo
+- name: "bug"
+  color: "d73a4a"
+  description: "Algo não está funcionando como esperado."
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "Nova funcionalidade ou melhoria."
+
+- name: "documentation"
+  color: "0075ca"
+  description: "Alterações na documentação."
+
+- name: "testing"
+  color: "f9d0c4"
+  description: "Trabalho em testes (unitários, integração, E2E)."
+
+- name: "security"
+  color: "b60205"
+  description: "Mudanças relacionadas à segurança."
+
+- name: "dependencies"
+  color: "0366d6"
+  description: "Atualização de dependências."
+
+- name: "refactor"
+  color: "1d76db"
+  description: "Refatoração sem mudança de comportamento."
+
+- name: "performance"
+  color: "bfd4f2"
+  description: "Melhorias de performance."
+
+- name: "ci"
+  color: "0e8a16"
+  description: "Alterações no pipeline CI/CD."
+
+# Prioridade
+- name: "priority: high"
+  color: "b60205"
+  description: "Alta prioridade (bloqueador)."
+
+- name: "priority: medium"
+  color: "f9d0c4"
+  description: "Prioridade média."
+
+- name: "priority: low"
+  color: "d4c5f9"
+  description: "Prioridade baixa."
+
+# Status
+- name: "status: blocked"
+  color: "000000"
+  description: "Aguardando dependência externa."
+
+- name: "status: ready"
+  color: "0e8a16"
+  description: "Pronto para revisão."
+
+- name: "status: in progress"
+  color: "fbca04"
+  description: "Em andamento."
+
+- name: "status: needs review"
+  color: "fef2c0"
+  description: "Aguardando revisão."
+
+# Tamanho
+- name: "size: small"
+  color: "0e8a16"
+  description: "< 50 linhas"
+
+- name: "size: medium"
+  color: "fbca04"
+  description: "50-300 linhas"
+
+- name: "size: large"
+  color: "b60205"
+  description: "> 300 linhas"
+
+# Domínios (opcional)
+- name: "domain: auth"
+  color: "5319e7"
+  description: "Autenticação e sessão"
+
+- name: "domain: scheduling"
+  color: "5319e7"
+  description: "Agendamentos"
+
+- name: "domain: customer"
+  color: "5319e7"
+  description: "Clientes/CRM"
+
+- name: "domain: inventory"
+  color: "5319e7"
+  description: "Estoque"
+
+- name: "domain: finance"
+  color: "5319e7"
+  description: "Financeiro"
+
+- name: "domain: communication"
+  color: "5319e7"
+  description: "WhatsApp, outbox"
