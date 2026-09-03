@@ -1,3 +1,4 @@
+// vitest.config.mjs
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
@@ -17,7 +18,7 @@ export default defineConfig({
         '**/node_modules/**',
         '**/__tests__/**',
         '**/dist/**',
-        '**/*.config.{ts,js}',
+        '**/*.config.{ts,js,mjs}',
         '**/types/**',
         '**/mocks/**',
       ],
