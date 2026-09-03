@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import { signUpAction } from '../presentation/actions/sign-up.action';
 import { signInAction } from '../presentation/actions/sign-in.action';
@@ -32,9 +32,14 @@ function assertFailure(result: any): string {
   return result.error;
 }
 
+// If Supabase is not available, skip all integration tests.
 describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
   beforeAll(() => {
     supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+  });
+
+  afterAll(() => {
+    // Cleanup can be added here if needed
   });
 
   describe('signUpAction - User and Tenant Creation', () => {
@@ -77,12 +82,16 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
     it('should return error for duplicate email', async () => {
       const dupEmail = 'dup-' + Date.now() + '@example.com';
       await signUpAction({
-        email: dupEmail, password: 'password123',
-        fullName: 'User One', tenantName: 'Tenant One ' + Date.now(),
+        email: dupEmail,
+        password: 'password123',
+        fullName: 'User One',
+        tenantName: 'Tenant One ' + Date.now(),
       });
       const result = await signUpAction({
-        email: dupEmail, password: 'password123',
-        fullName: 'User Two', tenantName: 'Tenant Two ' + Date.now(),
+        email: dupEmail,
+        password: 'password123',
+        fullName: 'User Two',
+        tenantName: 'Tenant Two ' + Date.now(),
       });
       const errorMsg = assertFailure(result);
       expect(errorMsg).toContain('ja esta cadastrado');
@@ -91,13 +100,17 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
     it('should return error for duplicate tenant name when constrained', async () => {
       const fixedTenantName = 'Unique Salon ' + Date.now();
       const result1 = await signUpAction({
-        email: 'owner1-' + Date.now() + '@example.com', password: 'password123',
-        fullName: 'Owner One', tenantName: fixedTenantName,
+        email: 'owner1-' + Date.now() + '@example.com',
+        password: 'password123',
+        fullName: 'Owner One',
+        tenantName: fixedTenantName,
       });
       assertSuccess(result1);
       const result2 = await signUpAction({
-        email: 'owner2-' + Date.now() + '@example.com', password: 'password123',
-        fullName: 'Owner Two', tenantName: fixedTenantName,
+        email: 'owner2-' + Date.now() + '@example.com',
+        password: 'password123',
+        fullName: 'Owner Two',
+        tenantName: fixedTenantName,
       });
       if (!result2.success) {
         expect(result2.error).toContain('salao');
@@ -107,8 +120,10 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
     it('should handle CPF field correctly', async () => {
       const emailWithCpf = 'cpf-test-' + Date.now() + '@example.com';
       const result = await signUpAction({
-        email: emailWithCpf, password: 'password123',
-        fullName: 'CPF User', tenantName: 'CPF Tenant ' + Date.now(),
+        email: emailWithCpf,
+        password: 'password123',
+        fullName: 'CPF User',
+        tenantName: 'CPF Tenant ' + Date.now(),
         cpf: '12345678901',
       });
       const data = assertSuccess(result);
@@ -117,25 +132,31 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
 
     it('should reject invalid CPF format', async () => {
       const result = await signUpAction({
-        email: 'invalid-cpf-' + Date.now() + '@example.com', password: 'password123',
-        fullName: 'Bad CPF User', tenantName: 'Bad CPF Tenant ' + Date.now(),
+        email: 'invalid-cpf-' + Date.now() + '@example.com',
+        password: 'password123',
+        fullName: 'Bad CPF User',
+        tenantName: 'Bad CPF Tenant ' + Date.now(),
         cpf: 'invalid-cpf',
       });
       assertFailure(result);
     });
   });
-
   describe('Row Level Security and Tenant Isolation', () => {
     it('should isolate tenants using RLS policies', async () => {
       const email1 = 'rls1-' + Date.now() + '@example.com';
       const email2 = 'rls2-' + Date.now() + '@example.com';
+
       await signUpAction({
-        email: email1, password: 'password123',
-        fullName: 'Tenant User 1', tenantName: 'Tenant Alpha ' + Date.now(),
+        email: email1,
+        password: 'password123',
+        fullName: 'Tenant User 1',
+        tenantName: 'Tenant Alpha ' + Date.now(),
       });
       const res2 = await signUpAction({
-        email: email2, password: 'password123',
-        fullName: 'Tenant User 2', tenantName: 'Tenant Beta ' + Date.now(),
+        email: email2,
+        password: 'password123',
+        fullName: 'Tenant User 2',
+        tenantName: 'Tenant Beta ' + Date.now(),
       });
       const data2 = assertSuccess(res2);
 
@@ -144,12 +165,15 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
       const { data: authSession } = await anonClient.auth.signInWithPassword({
-        email: email1, password: 'password123',
+        email: email1,
+        password: 'password123',
       });
       expect(authSession.session).toBeDefined();
 
       const { data: visibleTenants } = await anonClient
-        .from('tenants').select('*').eq('id', data2.data.tenant.id);
+        .from('tenants')
+        .select('*')
+        .eq('id', data2.data.tenant.id);
       expect(visibleTenants?.length ?? 0).toBe(0);
     });
   });
@@ -158,8 +182,10 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
     it('should reject invalid email and not create orphan user', async () => {
       const invalidEmail = 'malformed-email';
       const result = await signUpAction({
-        email: invalidEmail, password: 'password123',
-        fullName: 'Fail User', tenantName: 'Fail Tenant',
+        email: invalidEmail,
+        password: 'password123',
+        fullName: 'Fail User',
+        tenantName: 'Fail Tenant',
       });
       assertFailure(result);
       const { data: users } = await supabase.auth.admin.listUsers();
@@ -173,8 +199,10 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
       const loginEmail = 'login-test-' + Date.now() + '@example.com';
       const loginPassword = 'password123';
       await signUpAction({
-        email: loginEmail, password: loginPassword,
-        fullName: 'Login User', tenantName: 'Login Tenant ' + Date.now(),
+        email: loginEmail,
+        password: loginPassword,
+        fullName: 'Login User',
+        tenantName: 'Login Tenant ' + Date.now(),
       });
       const result = await signInAction({ email: loginEmail, password: loginPassword });
       const data = assertSuccess(result);
@@ -183,7 +211,8 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
 
     it('should reject invalid credentials', async () => {
       const result = await signInAction({
-        email: 'nonexistent@example.com', password: 'wrongpassword',
+        email: 'nonexistent@example.com',
+        password: 'wrongpassword',
       });
       const errorMsg = assertFailure(result);
       expect(errorMsg).toContain('incorretos');
@@ -193,24 +222,31 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
   describe('Data Validation', () => {
     it('should validate email format', async () => {
       const result = await signUpAction({
-        email: 'invalid-email', password: 'password123',
-        fullName: 'Test User', tenantName: 'Test Tenant',
+        email: 'invalid-email',
+        password: 'password123',
+        fullName: 'Test User',
+        tenantName: 'Test Tenant',
       });
       assertFailure(result);
     });
 
     it('should validate password length', async () => {
       const result = await signUpAction({
-        email: 'test@example.com', password: '123',
-        fullName: 'Test User', tenantName: 'Test Tenant',
+        email: 'test@example.com',
+        password: '123',
+        fullName: 'Test User',
+        tenantName: 'Test Tenant',
       });
       assertFailure(result);
     });
 
     it('should validate CPF format when provided', async () => {
       const result = await signUpAction({
-        email: 'cpf@example.com', password: 'password123',
-        fullName: 'Test User', tenantName: 'Test Tenant', cpf: 'invalid-cpf',
+        email: 'cpf@example.com',
+        password: 'password123',
+        fullName: 'Test User',
+        tenantName: 'Test Tenant',
+        cpf: 'invalid-cpf',
       });
       assertFailure(result);
     });
