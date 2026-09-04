@@ -2,6 +2,7 @@
  * Customer feature — Server Action unit tests (mocked Supabase).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@/lib/supabase/server';
 import {
   createCustomerAction,
@@ -9,14 +10,22 @@ import {
   updateCustomerAction,
   deleteCustomerAction,
 } from '../presentation/actions';
+import type { ActionResponse } from '@/lib/types/action.types';
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn(),
 }));
 
+/** Helper to safely narrow ActionResponse and access the error field. */
+function getError(result: ActionResponse<unknown>): string {
+  expect(result.success).toBe(false);
+  return (result as { success: false; error: string }).error;
+}
+
 type MockResult = { data: unknown; error: unknown | null };
 
 function createMockChain(result: MockResult) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chain: any = {
     select: vi.fn(() => chain),
     insert: vi.fn(() => chain),
@@ -34,6 +43,7 @@ function createMockChain(result: MockResult) {
     single: vi.fn(() => Promise.resolve(result)),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   chain.then = (resolve: any, reject: any) =>
     Promise.resolve(result).then(resolve, reject);
   return chain;
@@ -63,7 +73,7 @@ function buildMockSupabase(overrides: {
       }
       return chain;
     }),
-  };
+  } as unknown as SupabaseClient;
 }
 
 const TENANT_ID = 'tenant-123e4567-e89b';
@@ -84,7 +94,7 @@ describe('Customer Actions (Unit Tests)', () => {
       const result = await listCustomersAction();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você precisa estar autenticado.');
+      expect(getError(result)).toBe('Você precisa estar autenticado.');
     });
 
     it('should return list when authenticated', async () => {
@@ -92,12 +102,13 @@ describe('Customer Actions (Unit Tests)', () => {
         {
           id: 'cust-1',
           tenant_id: TENANT_ID,
-          name: 'Maria Silva',
+          full_name: 'Maria Silva',
           email: 'maria@example.com',
           phone: '+5511999999999',
-          cpf: '12345678901',
+          cpf: '52998224725',
           birth_date: '1990-01-01',
-          active: true,
+          last_visit_at: null,
+          status: 'active',
           created_at: '2026-09-01T00:00:00Z',
           updated_at: '2026-09-01T00:00:00Z',
           deleted_at: null,
@@ -116,7 +127,7 @@ describe('Customer Actions (Unit Tests)', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data[0].name).toBe('Maria Silva');
+        expect(result.data[0].fullName).toBe('Maria Silva');
         expect(result.data[0].tenantId).toBe(TENANT_ID);
       }
     });
@@ -131,10 +142,10 @@ describe('Customer Actions (Unit Tests)', () => {
         })
       );
 
-      const result = await createCustomerAction({ name: 'Teste', cpf: '123' });
+      const result = await createCustomerAction({ fullName: 'Teste', cpf: '123' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('11 dígitos');
+      expect(getError(result)).toContain('11 dígitos');
     });
 
     it('should require authentication', async () => {
@@ -142,22 +153,23 @@ describe('Customer Actions (Unit Tests)', () => {
         buildMockSupabase({ user: null })
       );
 
-      const result = await createCustomerAction({ name: 'Novo Cliente' });
+      const result = await createCustomerAction({ fullName: 'Novo Cliente', cpf: '52998224725' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você precisa estar autenticado.');
+      expect(getError(result)).toBe('Você precisa estar autenticado.');
     });
 
     it('should create customer when authenticated (any member)', async () => {
       const created = {
         id: 'cust-new',
         tenant_id: TENANT_ID,
-        name: 'Novo Cliente',
+        full_name: 'Novo Cliente',
         email: null,
         phone: null,
-        cpf: null,
+        cpf: '52998224725',
         birth_date: null,
-        active: true,
+        last_visit_at: null,
+        status: 'active',
         created_at: '2026-09-01T00:00:00Z',
         updated_at: '2026-09-01T00:00:00Z',
         deleted_at: null,
@@ -171,11 +183,11 @@ describe('Customer Actions (Unit Tests)', () => {
         })
       );
 
-            const result = await createCustomerAction({ name: 'Novo Cliente' });
+            const result = await createCustomerAction({ fullName: 'Novo Cliente', cpf: '52998224725' });
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.name).toBe('Novo Cliente');
+        expect(result.data.fullName).toBe('Novo Cliente');
         expect(result.data.tenantId).toBe(TENANT_ID);
       }
     });
@@ -192,23 +204,24 @@ describe('Customer Actions (Unit Tests)', () => {
 
       const result = await updateCustomerAction({
         id: ANY_UUID,
-        name: 'Atualizado',
+        fullName: 'Atualizado',
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para editar clientes.');
+      expect(getError(result)).toBe('Você não tem permissão para editar clientes.');
     });
 
     it('should update customer when user has management role', async () => {
       const updated = {
         id: 'cust-1',
         tenant_id: TENANT_ID,
-        name: 'Nome Atualizado',
+        full_name: 'Nome Atualizado',
         email: 'novo@email.com',
         phone: '+5511888888888',
-        cpf: '98765432100',
+        cpf: '52998224725',
         birth_date: '1985-05-15',
-        active: false,
+        last_visit_at: null,
+        status: 'inactive',
         created_at: '2026-09-01T00:00:00Z',
         updated_at: '2026-09-02T00:00:00Z',
         deleted_at: null,
@@ -224,14 +237,14 @@ describe('Customer Actions (Unit Tests)', () => {
 
       const result = await updateCustomerAction({
         id: ANY_UUID,
-        name: 'Nome Atualizado',
+        fullName: 'Nome Atualizado',
         email: 'novo@email.com',
       });
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.name).toBe('Nome Atualizado');
-        expect(result.data.active).toBe(false);
+        expect(result.data.fullName).toBe('Nome Atualizado');
+        expect(result.data.status).toBe('inactive');
       }
     });
   });
@@ -248,7 +261,7 @@ describe('Customer Actions (Unit Tests)', () => {
       const result = await deleteCustomerAction(ANY_UUID);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para remover clientes.');
+      expect(getError(result)).toBe('Você não tem permissão para remover clientes.');
     });
 
     it('should allow delete for admin role', async () => {

@@ -11,9 +11,18 @@ import type {
   CreateCustomerInput,
   UpdateCustomerInput,
   CustomerRow,
+  CustomerStatus,
 } from '../domain/customer';
 import { customerFromDb, sanitizeCustomer } from '../domain/customer';
 import type { CustomerRepository } from '../application/ports';
+
+/**
+ * Sanitizes a search term to prevent PostgREST syntax injection.
+ * Removes characters that PostgREST uses as operators: ( ) , .
+ */
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[(),.]/g, '').trim();
+}
 
 export class SupabaseCustomerRepository implements CustomerRepository {
   constructor(private readonly supabase: SupabaseClient) {}
@@ -25,12 +34,12 @@ export class SupabaseCustomerRepository implements CustomerRepository {
       .from('customers')
       .insert({
         tenant_id: tenantId,
-        name: sanitized.name,
+        full_name: sanitized.fullName,
         email: sanitized.email ?? null,
         phone: sanitized.phone ?? null,
-        cpf: sanitized.cpf ?? null,
+        cpf: sanitized.cpf,
         birth_date: sanitized.birthDate || null,
-        active: sanitized.active ?? true,
+        status: (sanitized.status as CustomerStatus) ?? 'active',
       })
       .select()
       .single();
@@ -45,7 +54,7 @@ export class SupabaseCustomerRepository implements CustomerRepository {
       .select()
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
-      .order('name');
+      .order('full_name');
 
     if (error) throw mapRepositoryError(error);
     return (data as CustomerRow[]).map(customerFromDb);
@@ -75,13 +84,13 @@ export class SupabaseCustomerRepository implements CustomerRepository {
       updated_at: new Date().toISOString(),
     };
 
-    if (sanitized.name !== undefined) updates.name = sanitized.name;
+    if (sanitized.fullName !== undefined) updates.full_name = sanitized.fullName;
     if (sanitized.email !== undefined) updates.email = sanitized.email ?? null;
     if (sanitized.phone !== undefined) updates.phone = sanitized.phone ?? null;
-    if (sanitized.cpf !== undefined) updates.cpf = sanitized.cpf ?? null;
+    if (sanitized.cpf !== undefined) updates.cpf = sanitized.cpf;
     if (sanitized.birthDate !== undefined)
       updates.birth_date = sanitized.birthDate || null;
-    if (sanitized.active !== undefined) updates.active = sanitized.active;
+    if (sanitized.status !== undefined) updates.status = sanitized.status;
 
     const { data, error } = await this.supabase
       .from('customers')
@@ -108,13 +117,21 @@ export class SupabaseCustomerRepository implements CustomerRepository {
   }
 
   async search(term: string, tenantId: string): Promise<Customer[]> {
+    const safeTerm = sanitizeSearchTerm(term);
+
+    if (!safeTerm) {
+      return this.findByTenant(tenantId);
+    }
+
     const { data, error } = await this.supabase
       .from('customers')
       .select()
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
-      .or(`name.ilike.%${term}%,cpf.ilike.%${term}%,email.ilike.%${term}%`)
-      .order('name');
+      .or(
+        `full_name.ilike.%${safeTerm}%,cpf.ilike.%${safeTerm}%,email.ilike.%${safeTerm}%`
+      )
+      .order('full_name');
 
     if (error) throw mapRepositoryError(error);
     return (data as CustomerRow[]).map(customerFromDb);
@@ -122,6 +139,9 @@ export class SupabaseCustomerRepository implements CustomerRepository {
 }
 
 function mapRepositoryError(error: { code?: string; message?: string }): Error {
+  if (error.code === '23505') {
+    return new Error('Já existe um cliente com este CPF neste tenant.');
+  }
   return new Error(
     error.message || 'Erro ao acessar o banco de dados. Tente novamente.'
   );

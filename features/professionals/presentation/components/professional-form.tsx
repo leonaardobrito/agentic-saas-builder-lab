@@ -102,7 +102,7 @@ export function ProfessionalForm({
               defaultValue={professional?.userId ?? undefined}
               disabled={isPending}
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Deixe em branco para profissionais sem login
             </p>
           </div>
@@ -123,7 +123,7 @@ export function ProfessionalForm({
 
           {error && (
             <div
-              className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800"
+              className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400"
               role="alert"
             >
               {error}

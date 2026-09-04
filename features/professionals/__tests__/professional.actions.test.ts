@@ -2,6 +2,7 @@
  * Professional feature — Server Action unit tests (mocked Supabase).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@/lib/supabase/server';
 import {
   createProfessionalAction,
@@ -9,14 +10,22 @@ import {
   updateProfessionalAction,
   deleteProfessionalAction,
 } from '../presentation/actions';
+import type { ActionResponse } from '@/lib/types/action.types';
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn(),
 }));
 
+/** Helper to safely narrow ActionResponse and access the error field. */
+function getError(result: ActionResponse<unknown>): string {
+  expect(result.success).toBe(false);
+  return (result as { success: false; error: string }).error;
+}
+
 type MockResult = { data: unknown; error: unknown | null };
 
 function createMockChain(result: MockResult) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chain: any = {
     select: vi.fn(() => chain),
     insert: vi.fn(() => chain),
@@ -34,6 +43,7 @@ function createMockChain(result: MockResult) {
     maybeSingle: vi.fn(() => Promise.resolve(result)),
   };
   // The real Supabase builder is thenable — allow `await chain`.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   chain.then = (resolve: any, reject: any) =>
     Promise.resolve(result).then(resolve, reject);
   return chain;
@@ -63,7 +73,7 @@ function buildMockSupabase(overrides: {
       }
       return chain;
     }),
-  };
+  } as unknown as SupabaseClient;
 }
 
 const TENANT_ID = 'tenant-123e4567-e89b';
@@ -84,7 +94,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await listProfessionalsAction();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você precisa estar autenticado.');
+      expect(getError(result)).toBe('Você precisa estar autenticado.');
     });
 
     it('should return error when user has no active membership', async () => {
@@ -98,7 +108,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await listProfessionalsAction();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você precisa estar autenticado.');
+      expect(getError(result)).toBe('Você precisa estar autenticado.');
     });
 
     it('should return list when authenticated with active membership', async () => {
@@ -146,7 +156,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await createProfessionalAction({ name: 'A' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('mínimo 2');
+      expect(getError(result)).toContain('mínimo 2');
     });
 
     it('should return error when unauthenticated', async () => {
@@ -157,7 +167,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await createProfessionalAction({ name: 'João' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você precisa estar autenticado.');
+      expect(getError(result)).toBe('Você precisa estar autenticado.');
     });
 
     it('should return RBAC error for non-management role', async () => {
@@ -171,7 +181,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await createProfessionalAction({ name: 'Novo Profissional' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para cadastrar profissionais.');
+      expect(getError(result)).toBe('Você não tem permissão para cadastrar profissionais.');
     });
 
     it('should create professional when user has management role', async () => {
@@ -219,7 +229,7 @@ describe('Professional Actions (Unit Tests)', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para editar profissionais.');
+      expect(getError(result)).toBe('Você não tem permissão para editar profissionais.');
     });
 
     it('should update professional when user has management role', async () => {
@@ -268,7 +278,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await deleteProfessionalAction(ANY_UUID);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para remover profissionais.');
+      expect(getError(result)).toBe('Você não tem permissão para remover profissionais.');
     });
 
     it('should deny delete for manager role (only owner/admin)', async () => {
@@ -282,7 +292,7 @@ describe('Professional Actions (Unit Tests)', () => {
       const result = await deleteProfessionalAction(ANY_UUID);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para remover profissionais.');
+      expect(getError(result)).toBe('Você não tem permissão para remover profissionais.');
     });
 
     it('should allow delete for admin role', async () => {

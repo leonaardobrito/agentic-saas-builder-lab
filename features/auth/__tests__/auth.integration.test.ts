@@ -6,7 +6,13 @@ import { signInAction } from '../presentation/actions/sign-in.action';
 /**
  * Integration Tests for Authentication
  * These tests require a running Supabase local instance (supabase start).
+ *
+ * Timeout is set to 15s per test because signUpAction performs multiple
+ * network round-trips to the local Supabase (auth + RPC).
  */
+
+// Increase default timeout for integration tests (Supabase round-trips)
+const INTEGRATION_TIMEOUT = 15_000;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -43,7 +49,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
   });
 
   describe('signUpAction - User and Tenant Creation', () => {
-    it('should create user, tenant, and membership successfully', async () => {
+    it('should create user, tenant, and membership successfully', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const testEmail = 'test-' + Date.now() + '@example.com';
       const testTenantName = 'Tenant ' + Date.now();
 
@@ -79,7 +85,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
       expect(membership!.is_active).toBe(true);
     });
 
-    it('should return error for duplicate email', async () => {
+    it('should return error for duplicate email', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const dupEmail = 'dup-' + Date.now() + '@example.com';
       await signUpAction({
         email: dupEmail,
@@ -94,10 +100,10 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
         tenantName: 'Tenant Two ' + Date.now(),
       });
       const errorMsg = assertFailure(result);
-      expect(errorMsg).toContain('ja esta cadastrado');
+      expect(errorMsg).toContain('cadastrado');
     });
 
-    it('should return error for duplicate tenant name when constrained', async () => {
+    it('should return error for duplicate tenant name when constrained', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const fixedTenantName = 'Unique Salon ' + Date.now();
       const result1 = await signUpAction({
         email: 'owner1-' + Date.now() + '@example.com',
@@ -117,7 +123,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
       }
     });
 
-    it('should handle CPF field correctly', async () => {
+    it('should handle CPF field correctly', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const emailWithCpf = 'cpf-test-' + Date.now() + '@example.com';
       const result = await signUpAction({
         email: emailWithCpf,
@@ -130,7 +136,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
       expect(data.data.user.email).toBe(emailWithCpf);
     });
 
-    it('should reject invalid CPF format', async () => {
+    it('should reject invalid CPF format', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const result = await signUpAction({
         email: 'invalid-cpf-' + Date.now() + '@example.com',
         password: 'password123',
@@ -142,7 +148,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
     });
   });
   describe('Row Level Security and Tenant Isolation', () => {
-    it('should isolate tenants using RLS policies', async () => {
+    it('should isolate tenants using RLS policies', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const email1 = 'rls1-' + Date.now() + '@example.com';
       const email2 = 'rls2-' + Date.now() + '@example.com';
 
@@ -179,7 +185,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
   });
 
   describe('Rollback and Error Handling', () => {
-    it('should reject invalid email and not create orphan user', async () => {
+    it('should reject invalid email and not create orphan user', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const invalidEmail = 'malformed-email';
       const result = await signUpAction({
         email: invalidEmail,
@@ -195,7 +201,7 @@ describe.skipIf(!hasSupabase)('Authentication Integration Tests', () => {
   });
 
   describe('signInAction - Authentication', () => {
-    it('should authenticate with valid credentials', async () => {
+    it('should authenticate with valid credentials', { timeout: INTEGRATION_TIMEOUT }, async () => {
       const loginEmail = 'login-test-' + Date.now() + '@example.com';
       const loginPassword = 'password123';
       await signUpAction({

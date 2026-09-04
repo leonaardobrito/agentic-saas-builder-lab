@@ -1,311 +1,233 @@
-# Design System — StyleFlow SaaS
+# Design System - StyleFlow SaaS
 
 **Status:** APPROVED TARGET
-**Version:** 1.0
-**Updated:** 2026-09-02
-**Scope:** MVP — Beauty / Salões e Centros Estéticos
-**Authority:** Linguagem visual, componentes, interações e acessibilidade
+**Version:** 2.0
+**Updated:** 2026-09-03
+**Scope:** MVP - Beauty / Saloes e Centros Esteticos
+**Authority:** Linguagem visual, componentes, interacoes e acessibilidade
 
 ---
 
-## 0. Como Agentes Devem Usar Este Documento
+## 0. Agent Constraints (Rules of Authority)
 
-Este documento define os **padrões visuais, componentes, interações e diretrizes de acessibilidade** da interface do StyleFlow.
+Before writing or editing any line of code, any AI Agent operating on this repository must verify the following five strict constraints:
 
-É a fonte da verdade para a implementação da UI.
-
-### Regras de Autoridade
-
-- `design-system.md` define **como a interface deve se parecer e se comportar**.
-- `architecture.md` define **onde os componentes são organizados** (`shared/ui/`).
-- `domain-model.md` define **quais entidades são exibidas**.
-- `testing-strategy.md` define **testes de acessibilidade** obrigatórios.
-
-### Antes de implementar um componente UI
-
-O agente DEVE:
-
-1. Verificar se o componente já existe em `shared/ui/` (shadcn/ui ou componentes customizados).
-2. Usar as cores, espaçamentos e tipografia definidos neste documento.
-3. Verificar se o componente é responsivo (mobile-first).
-4. Garantir que o componente seja acessível (keyboard, focus, ARIA).
-5. Garantir que o texto da UI esteja em **Português‑BR** (a menos que seja um termo técnico interno).
-6. Atualizar este documento se um novo componente reutilizável for criado.
+1. **Check `shared/ui/` or `features/[feature]/presentation/components/` First**: Always reuse existing primitives before creating new component files.
+2. **Strict Color Palette Enforcement**: Use ONLY the explicit Slate, Rose, and semantic tokens defined in Section 2.
+3. **Language Invariant (Portugues-BR)**: All customer-facing UI must be in Portuguese do Brasil.
+4. **Mandatory Accessibility (WCAG AA)**: Minimum contrast 4.5:1, focus rings, aria-labels, 44x44px touch targets.
+5. **Mandatory Dark Mode Synchronization**: Every component must use Tailwind dark: variants.
 
 ---
 
-## 1. Princípios de Design
+## 1. Core Principles
 
-1. **Mobile-First:** A interface deve funcionar perfeitamente em telas de 360px+ (smartphones). A experiência mobile é priorizada.
-2. **Profissional e Acolhedor:** Visual limpo, moderno, com toque humano (cores quentes, arredondamentos suaves).
-3. **Denso em Informação:** Gestores precisam ver muitos dados rapidamente. Use espaçamento compacto (`gap-2`, `p-3`) sem sacrificar a usabilidade.
-4. **Acessível por Padrão:** WCAG 2.1 AA é o mínimo. Navegação por teclado, contraste, labels e foco visível são obrigatórios.
-5. **Componentes Reutilizáveis:** Use shadcn/ui como base. Não invente novos padrões visuais sem justificativa.
-6. **Modo Escuro (Dark Mode):** Suporte nativo (via `dark:` classes do Tailwind) desde o início.
+### 1.1 Anti-AI-Slop Manifesto
 
----
+Forbidden: No arbitrary gradients, no neon glows, no glassmorphism on static cards, no nested cards, no side-tab borders, no uncalibrated border radii (cap: rounded-2xl).
 
-## 2. Linguagem Visual (Visual Language)
+### 1.2 Z-Axis Depth Rule (Dark Mode)
 
-### 2.1. Paleta de Cores (Color Palette)
-
-| Função | Cor | Hex | Uso |
+| Level | Class | HEX | Usage |
 | :--- | :--- | :--- | :--- |
-| **Primária (Primary)** | Rose | `#e11d48` (600) | Botões principais, links, destaques, badges de "ativo". |
-| **Primária Hover** | Rose | `#be123c` (700) | Hover de botões primários. |
-| **Primária Fraca** | Rose | `#fce7f3` (100) | Backgrounds sutis, seleções. |
-| **Header / Navegação** | Slate | `#0f172a` (900) | Topbar, sidebar, rodapé. |
-| **Fundo Principal** | Slate | `#f8fafc` (50) | Background principal (modo claro). |
-| **Cards / Painéis** | White | `#ffffff` | Cards, modais, dropdowns. |
-| **Bordas** | Slate | `#e2e8f0` (200) | Divisórias, inputs. |
-| **Sucesso** | Emerald | `#10b981` (500) | Pagamento confirmado, agendamento concluído, ativo. |
-| **Atenção / Alerta** | Amber | `#f59e0b` (500) | Estoque baixo, vencimento próximo, pendência. |
-| **Erro / Crítico** | Red | `#ef4444` (500) | Falta (no-show), falha de pagamento, erro crítico. |
-| **IA / Automação** | Violet | `#8b5cf6` (500) | Ações disparadas por IA, sugestões inteligentes. |
-| **Texto Principal** | Slate | `#1e293b` (800) | Títulos e corpo de texto. |
-| **Texto Secundário** | Slate | `#64748b` (500) | Labels, placeholders, dados menos importantes. |
-
-**Regra:** Nunca use cores arbitrárias (ex: `bg-blue-500` para um botão). Se não estiver na paleta acima, **não use**.
-
-### 2.2. Tipografia (Typography)
-
-| Elemento | Fonte | Tamanho | Peso | Uso |
-| :--- | :--- | :--- | :--- | :--- |
-| **Títulos (H1)** | Plus Jakarta Sans | `text-2xl` (24px) / `text-3xl` (30px) | `font-bold` (700) | Páginas principais, cabeçalhos de seção. |
-| **Subtítulos (H2)** | Plus Jakarta Sans | `text-xl` (20px) / `text-2xl` (24px) | `font-semibold` (600) | Títulos de cards, seções secundárias. |
-| **Corpo (Body)** | Plus Jakarta Sans | `text-sm` (14px) / `text-base` (16px) | `font-normal` (400) | Texto corrido, parágrafos. |
-| **UI / Labels** | Plus Jakarta Sans | `text-xs` (12px) / `text-sm` (14px) | `font-medium` (500) | Rótulos de campos, badges, dados de tabela. |
-| **Números / Valores** | JetBrains Mono (ou monoespaçada) | `text-sm` (14px) | `font-medium` (500) | Valores monetários, métricas, IDs. |
-| **Links** | Plus Jakarta Sans | `text-sm` (14px) | `font-medium` (500) | Links de navegação, ações secundárias. |
-
-**Importante:**
-- **Mobile:** Tamanhos mínimos de toque: 44x44px.
-- **Hierarquia:** Use tamanhos e pesos para criar hierarquia visual, não apenas cores.
-
-### 2.3. Espaçamento (Spacing)
-
-Use o sistema de grid do Tailwind (baseado em múltiplos de 4px):
-
-| Token | Valor | Uso |
-| :--- | :--- | :--- |
-| `p-1` / `m-1` | 4px | Margens mínimas entre ícones e texto. |
-| `p-2` / `m-2` | 8px | Padding interno de badges, chips. |
-| `p-3` / `m-3` | 12px | Padding de cards pequenos, itens de lista. |
-| `p-4` / `m-4` | 16px | Padding de cards, containers. |
-| `p-6` / `m-6` | 24px | Padding de seções, modais. |
-| `gap-2` | 8px | Espaço entre elementos em grids/flex. |
-| `gap-4` | 16px | Espaço entre seções, grupos de campos. |
-
-### 2.4. Bordas e Sombras (Borders & Shadows)
-
-| Elemento | Valor | Uso |
-| :--- | :--- | :--- |
-| **Border Radius (Padrão)** | `rounded-lg` (8px) | Cards, containers, inputs. |
-| **Border Radius (Botões)** | `rounded-md` (6px) | Botões primários/secundários. |
-| **Border Radius (Modais)** | `rounded-xl` (12px) | Modais, bottom sheets. |
-| **Border Radius (Destaque)** | `rounded-full` (9999px) | Badges, avatares, chips. |
-| **Shadow (Card)** | `shadow-sm` | Cards, containers leves. |
-| **Shadow (Elevado)** | `shadow-md` | Dropdowns, modais, elementos flutuantes. |
-| **Shadow (Ênfase)** | `shadow-lg` | Elementos que precisam de destaque (ex: alertas). |
-
-### 2.5. Ícones (Icons)
-
-- **Biblioteca:** Lucide React (v0.542+).
-- **Tamanho:** `size-4` (16px) para ícones inline, `size-5` (20px) para ações primárias, `size-6` (24px) para navegação.
-- **Cor:** Herdar a cor do texto (`currentColor`) ou usar uma cor específica da paleta (ex: `text-rose-600` para ícones de ação primária).
+| Z-0 Base | bg-slate-950 | #020617 | Root background |
+| Z-1 Structural | bg-slate-900 | #0f172a | Header, sidebar |
+| Z-2 Content | bg-slate-900 | #0f172a | Cards, tables |
+| Z-3 Floating | bg-slate-800 | #1e293b | Dropdowns |
+| Z-4 Modal | bg-slate-900 + border | #0f172a | Dialogs |
 
 ---
 
-## 3. Componentes Base (shadcn/ui)
+## 2. Color Palette (Absolute Tokens)
 
-StyleFlow usa **shadcn/ui** como base para todos os componentes primitivos.
+### 2.1 Neutrals (Slate)
 
-### 3.1. Componentes Obrigatórios do shadcn/ui (MVP)
+| Token | Hex | Role |
+| :--- | :--- | :--- |
+| Slate 50 | #f8fafc | Light canvas |
+| Slate 100 | #f1f5f9 | Dividers, dark text |
+| Slate 200 | #e2e8f0 | Borders |
+| Slate 300 | #cbd5e1 | Hover borders |
+| Slate 400 | #94a3b8 | Placeholders |
+| Slate 500 | #64748b | Secondary text |
+| Slate 600 | #475569 | Inactive icons |
+| Slate 700 | #334155 | Dark borders |
+| Slate 800 | #1e293b | Dark cards |
+| Slate 900 | #0f172a | Dark bg, light headings |
+| Slate 950 | #020617 | Dark canvas |
 
-| Componente | Uso |
-| :--- | :--- |
-| `Button` | Ações primárias, secundárias, destrutivas. |
-| `Input` | Campos de formulário (texto, email, telefone). |
-| `Select` | Dropdowns para seleção (ex: profissional, serviço). |
-| `Calendar` | Seleção de data no agendamento. |
-| `Dialog` / `Modal` | Confirmações, formulários em sobreposição. |
-| `Sheet` | Painéis laterais, menus mobile. |
-| `DropdownMenu` | Menus contextuais, ações em lista. |
-| `Tabs` | Navegação entre seções (ex: Painel de Comando). |
-| `Card` | Containers de conteúdo. |
-| `Badge` | Status, tags, labels. |
-| `Alert` | Mensagens de erro, sucesso, aviso. |
-| `Table` | Listas de dados (clientes, agendamentos). |
-| `Toast` | Notificações temporárias. |
+### 2.2 Brand (Rose)
 
-### 3.2. Customização (Temas)
+| Token | Hex | Role |
+| :--- | :--- | :--- |
+| Rose 50 | #fff1f2 | Active nav pill |
+| Rose 100 | #ffe4e6 | Hover active |
+| Rose 500 | #f43f5e | Gradient start |
+| Rose 600 | #e11d48 | **Core Brand Primary** |
+| Rose 700 | #be123c | Pressed state |
+| Rose 950 | #4c0519 | Dark shadows |
 
-**Nunca** modifique diretamente os componentes do shadcn/ui no `components/ui/`. Em vez disso, use:
+### 2.3 Semantic Tokens
 
-1. **Classes Tailwind:** Adicione classes `className` para estender (ex: `className="bg-rose-600 text-white"`).
-2. **Variantes:** Use `cva` (class-variance-authority) para criar variantes reutilizáveis no `shared/ui/`.
+| State | Classes | Hex |
+| :--- | :--- | :--- |
+| Success | text-emerald-500 / bg-emerald-500/10 | #10b981 |
+| Warning | text-amber-500 / bg-amber-500/10 | #f59e0b |
+| Danger | text-red-500 / bg-red-500/10 | #ef4444 |
+| Info | text-indigo-500 / bg-indigo-500/10 | #6366f1 |
 
-**Exemplo (Botão Primário Customizado):**
+### 2.4 Signature Gradient
 
-```tsx
-// shared/ui/button-primary.tsx
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-
-export const ButtonPrimary = ({ className, ...props }: React.ComponentProps<typeof Button>) => (
-  <Button
-    className={cn(
-      'bg-rose-600 text-white hover:bg-rose-700 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2',
-      className
-    )}
-    {...props}
-  />
-);
 ```
-
----
-
-## 4. Layout e Navegação (Layout & Navigation)
-
-### 4.1. Estrutura Geral (Dashboard)
-
-
-### 4.2. Navegação Responsiva
-
-| Breakpoint | Largura | Navegação |
-| :--- | :--- | :--- |
-| **Mobile** | < 768px | Bottom Nav (ícones + labels curtos) + Topbar (condensada). |
-| **Desktop** | ≥ 768px | Sidebar fixa (240px) + Topbar completa (com título da página). |
-
-**Regras:**
-- Bottom Nav: Apenas os 4 itens principais (Dashboard, Agenda, Clientes, Mais).
-- Topbar: Sempre visível, com o nome do tenant selecionado.
-
----
-
-## 5. Painel de Comando (Activity Feed / Feed de Atividades)
-
-Este é um módulo futuro, mas suas diretrizes visuais já devem ser definidas.
-
-### 5.1. Layout do Feed
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  Painel de Comando                         [Filtrar] [Data]│
-│  ┌─────┬─────┬─────┬──────┬─────────────────────────────┐│
-│  │ 📅  │ 💰  │ 📦  │ 💬   │  (Tabs com contagem)       ││
-│  │Agenda│Caixa│Estoq│ Com. │                             ││
-│  └─────┴─────┴─────┴──────┴─────────────────────────────┘│
-│                                                           │
-│  ┌──────────────────────────────────────────────────────┐│
-│  │ 🔴  │ Cliente Maria faltou (No-show)   │ 10:30   ││
-│  │     │ Agenda - 12/09/2026              │ [Ação]   ││
-│  └──────────────────────────────────────────────────────┘│
-│  ┌──────────────────────────────────────────────────────┐│
-│  │ 🟡  │ Estoque de Tinta X abaixo do mínimo │ 09:15   ││
-│  │     │ Estoque - 5 unidades               │ [Ação]   ││
-│  └──────────────────────────────────────────────────────┘│
-│  ┌──────────────────────────────────────────────────────┐│
-│  │ 🟣  │ João respondeu: "Posso 15h?"      │ 08:45   ││
-│  │     │ Comunicação - WhatsApp             │ [Ação]   ││
-│  └──────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+bg-gradient-to-tr from-rose-500 via-pink-500 to-amber-500
 ```
+Authorized: Logo, favicon, hero icon containers ONLY.
 
-### 5.2. Categorias e Cores (Tabs)
+### 2.5 CSS Custom Properties
 
-| Categoria | Ícone | Cor (Tab) | Cor (Badge de contagem) |
+See `app/globals.css` for complete token definitions.
+
+---
+
+## 3. Typography & Scale
+
+### 3.1 Font Stack
+
+System font stack via `font-sans`.
+
+### 3.2 Typographic Hierarchy
+
+| Role | Classes | Size | Weight |
 | :--- | :--- | :--- | :--- |
-| **Agenda** | `📅` (Calendar) | `text-rose-600` | `bg-rose-100 text-rose-700` |
-| **Caixa** | `💰` (Coins) | `text-emerald-600` | `bg-emerald-100 text-emerald-700` |
-| **Estoque** | `📦` (Package) | `text-amber-600` | `bg-amber-100 text-amber-700` |
-| **Comunicações** | `💬` (MessageCircle) | `text-violet-600` | `bg-violet-100 text-violet-700` |
+| Display H1 | text-3xl tracking-tight font-black | 30px | 900 |
+| Page Title H2 | text-2xl tracking-tight font-bold | 24px | 700 |
+| Section H3 | text-xl tracking-tight font-bold | 20px | 700 |
+| Card Header H4 | text-base font-semibold | 16px | 600 |
+| Body Primary | text-sm leading-relaxed | 14px | 400 |
+| Body Secondary | text-xs leading-normal | 12px | 400 |
+| Micro-Label | text-[10px] font-bold tracking-wider uppercase | 10px | 700 |
 
-### 5.3. Cards de Evento (Item do Feed)
+### 3.3 No-Wrap Rule
 
-Cada evento é um **card horizontal** com:
-
-- **Borda lateral (border-l-4):** Cor correspondente à categoria (ex: `border-rose-500`).
-- **Status (Badge):** `new` (azul), `pending` (amarelo), `resolved` (verde), `awaiting` (violeta), `failed` (vermelho).
-- **Payload:** Título (ex: "Cliente Maria faltou"), descrição (ex: "Agendamento 10:00 - 11:00"), horário.
-- **Ação:** Botão primário secundário (ex: "Remarcar", "Enviar mensagem", "Baixar estoque").
-
-### 5.4. Tipografia do Feed
-
-| Elemento | Classe | Exemplo |
-| :--- | :--- | :--- |
-| Título do Evento | `text-sm font-medium text-slate-800` | "Cliente Maria faltou" |
-| Descrição | `text-xs text-slate-500` | "Agendamento 10:00 - 11:00" |
-| Horário | `text-xs text-slate-400` | "10:30" |
-| Badge de Status | `text-xs font-medium` | "Pendente" |
+All buttons, pills, chips, badges: `whitespace-nowrap select-none`
 
 ---
 
-## 6. Acessibilidade (Accessibility)
+## 4. Spacing & Layout
 
-A acessibilidade é **obrigatória** e faz parte da Definição de Pronto.
+### 4.1 Button Proportion (2:1)
 
-### 6.1. Requisitos Mínimos (WCAG 2.1 AA)
+| Variant | Padding | Classes | Height |
+| :--- | :--- | :--- | :--- |
+| Compact | 6px/12px | px-3 py-1.5 text-xs | ~32px |
+| Standard | 10px/20px | px-5 py-2.5 text-sm | ~42px |
+| Large | 12px/24px | px-6 py-3 text-base | ~48px |
 
-| Critério | Implementação |
+### 4.2 Container
+
+`<main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">`
+
+---
+
+## 5. Borders, Corners & Shadows
+
+### 5.1 Nested Corner Formula
+
+R_inner = R_outer - P_padding
+
+### 5.2 Radius Matrix
+
+| Element | Class |
 | :--- | :--- |
-| **Contraste** | Razão de contraste ≥ 4.5:1 para texto normal; ≥ 3:1 para texto grande. Use `text-slate-800` sobre fundo branco, nunca `text-slate-400`. |
-| **Navegação por Teclado** | Todos os elementos interativos (botões, inputs, links) devem ser acessíveis via `Tab`. |
-| **Foco Visível** | Use `focus:ring-2 focus:ring-rose-500 focus:ring-offset-2` em todos os elementos interativos. |
-| **ARIA Labels** | Botões de ícone devem ter `aria-label` descritivo. |
-| **Semântica HTML** | Use `<button>` para ações, `<a>` para links, `<h1>`...`<h6>` para títulos. Evite `<div onClick>`. |
-| **Reduced Motion** | Respeite `prefers-reduced-motion` (use `motion-safe:` nas animações). |
+| Modal / Login Card | rounded-3xl (24px) |
+| Standard Card | rounded-2xl (16px) |
+| Inputs / Buttons | rounded-xl (12px) |
+| Avatars, Tags, Toggles | rounded-full |
 
-### 6.2. Testes de Acessibilidade
+### 5.3 Shadow Tokens
 
-- Use **axe-core** integrado ao Playwright para testes automáticos.
-- Teste manualmente com leitores de tela (NVDA, VoiceOver) para fluxos críticos.
-
----
-
-## 7. Modo Escuro (Dark Mode)
-
-- Use a estratégia `dark:` do Tailwind.
-- **Fundo:** `dark:bg-slate-950` (quase preto).
-- **Cards:** `dark:bg-slate-900`.
-- **Texto:** `dark:text-slate-100` (primário) e `dark:text-slate-400` (secundário).
-- **Bordas:** `dark:border-slate-800`.
-- **Cores primárias:** Mantêm-se as mesmas (Rose, Emerald, Amber, Violet) com ajuste de contraste.
+Light: shadow-md shadow-slate-200/50 (card)
+Dark: shadow-xl shadow-slate-950/50 (card), shadow-2xl shadow-rose-950/20 (hero)
+Modal: shadow-2xl shadow-black/80
 
 ---
 
-## 8. Design System Checklist para Agentes
+## 6. Icons
 
-Antes de finalizar qualquer componente UI, verifique:
-
-```text
-[ ] O componente existe no shadcn/ui? Se sim, use-o.
-[ ] As cores estão na paleta definida? (Rose/Slate/Emerald/Amber/Violet)
-[ ] O espaçamento segue o sistema (múltiplos de 4px)?
-[ ] O texto está em Português‑BR?
-[ ] É responsivo (mobile-first)?
-[ ] É acessível (tab, focus, aria-label)?
-[ ] Suporta modo escuro (dark:)?
-[ ] Foi testado em mobile (360px+) e desktop?
-[ ] A documentação foi atualizada se um novo componente reutilizável foi criado?
-```
+Source: `lucide-react` exclusively. Default stroke width. Color inherits from parent via `text-current`.
 
 ---
 
-## 9. Rastreabilidade (Traceability)
+## 7. Animations (motion/react)
 
-| Documento | Relação |
+See `shared/lib/animations.ts` for:
+- pageTransitionVariants
+- staggerContainerVariants / staggerItemVariants
+- buttonWhileHover / buttonWhileTap
+
+---
+
+## 8. Component Primitives
+
+All implementations in `shared/ui/`:
+
+| Component | File |
 | :--- | :--- |
-| `architecture.md` | Define onde os componentes vivem (`shared/ui/`). |
-| `testing-strategy.md` | Define testes de acessibilidade (axe-core). |
-| `definition-of-done.md` | Acessibilidade é critério de "pronto". |
-| `domain-model.md` | Entidades que são exibidas nos cards do feed. |
+| Button | shared/ui/button.tsx |
+| Card | shared/ui/card.tsx |
+| Input | shared/ui/input.tsx |
+| Label | shared/ui/label.tsx |
+| Alert | shared/ui/alert.tsx |
+| EmptyState | shared/ui/empty-state.tsx |
+| CardSkeleton | shared/ui/card-skeleton.tsx |
+| SwitchToggle | shared/ui/switch-toggle.tsx |
+| ToastNotification | shared/ui/toast-notification.tsx |
 
 ---
 
-## 10. Notas Finais (Para Agentes e Designers)
+## 9. Layout Architecture
 
-- **Consistência é mais importante que criatividade.** Se você não tem certeza, olhe para um componente existente e copie o padrão.
-- **Nunca use cores fora da paleta.** Se precisar de uma cor nova, adicione-a ao documento primeiro.
-- **O Painel de Comando (Activity Feed) é o futuro.** As diretrizes visuais definidas aqui devem ser seguidas quando o módulo for implementado.
-- **Português‑BR:** Toda a interface é para usuários brasileiros. Use "Agendamento", "Cliente", "Estoque", etc. Termos técnicos em inglês (`tenant`, `appointment`) são para código, não para UI.
+### 9.1 Navigation
+
+- Header: h-16, backdrop-blur-md, z-30
+- Bottom Bar: h-16, fixed, backdrop-blur-md, md:hidden
+- Nav items with icons (lucide-react, w-5 h-5)
+
+### 9.2 Navigation States
+
+- Active: font-bold text-rose-600 bg-rose-50 rounded-xl
+- Inactive: font-medium text-slate-600 hover:bg-slate-50 rounded-xl
+
+---
+
+## 10. Verification Checklist
+
+- Colors from authorized tokens
+- Dark mode Z-axis respected
+- Button padding 2:1
+- whitespace-nowrap on badges/buttons
+- Nested radii calculated
+- Icons from lucide-react
+- Strings in Portugues-BR
+- Animations use motion/react
+- Mobile-first responsive
+- Accessible (tab, focus, aria)
+
+---
+
+## 11. Traceability
+
+| Doc | Relation |
+| :--- | :--- |
+| architecture.md | Component location |
+| testing-strategy.md | Accessibility tests |
+| definition-of-done.md | Done criteria |
+| domain-model.md | Displayed entities |
+
+---
+
+## 12. Notas Finais
+
+- Consistencia e mais importante que criatividade.
+- Nunca use cores fora da paleta.
+- Portugues-BR: Toda a interface e para usuarios brasileiros.

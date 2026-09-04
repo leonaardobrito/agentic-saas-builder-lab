@@ -8,17 +8,22 @@
  * Table: public.customers
  */
 import { z } from 'zod';
+import { isValidCPF } from '@/shared/utils/validations';
 
-/** Database row shape (snake_case). */
+/** Customer status — mirrors the CHECK constraint in the database. */
+export type CustomerStatus = 'active' | 'inactive' | 'blocked';
+
+/** Database row shape (snake_case) — maps 1:1 to public.customers columns. */
 export interface CustomerRow {
   id: string;
   tenant_id: string;
-  name: string;
+  full_name: string;
   email: string | null;
   phone: string | null;
-  cpf: string | null;
+  cpf: string;
   birth_date: string | null;
-  active: boolean;
+  last_visit_at: string | null;
+  status: CustomerStatus;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -28,12 +33,13 @@ export interface CustomerRow {
 export interface Customer {
   id: string;
   tenantId: string;
-  name: string;
+  fullName: string;
   email: string | null;
   phone: string | null;
-  cpf: string | null;
+  cpf: string;
   birthDate: string | null;
-  active: boolean;
+  lastVisitAt: string | null;
+  status: CustomerStatus;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -44,32 +50,27 @@ export function customerFromDb(row: CustomerRow): Customer {
   return {
     id: row.id,
     tenantId: row.tenant_id,
-    name: row.name,
+    fullName: row.full_name,
     email: row.email,
     phone: row.phone,
     cpf: row.cpf,
     birthDate: row.birth_date,
-    active: row.active,
+    lastVisitAt: row.last_visit_at,
+    status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
   };
 }
 
-/** CPF validation: 11 digits only (strips formatting). */
-const cpfRegex = /^\d{11}$/;
+// --- Zod Schemas ---------------------------------------------------------
 
 /** E.164-ish phone: + followed by digits and optional dashes/spaces/parentheses. */
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
-/** Email format check (RFC 5322 simplified). */
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// --- Zod Schemas ---------------------------------------------------------
-
 /** Schema for creating a new customer (tenant_id is injected by the server). */
 export const createCustomerSchema = z.object({
-  name: z
+  fullName: z
     .string()
     .min(2, 'O nome deve ter no mínimo 2 caracteres.')
     .max(100, 'O nome deve ter no máximo 100 caracteres.'),
@@ -87,22 +88,21 @@ export const createCustomerSchema = z.object({
     .or(z.literal('')),
   cpf: z
     .string()
-    .regex(cpfRegex, 'CPF deve conter 11 dígitos numéricos.')
-    .optional()
-    .nullable()
-    .or(z.literal('')),
+    .length(11, 'CPF deve conter 11 dígitos.')
+    .regex(/^\d{11}$/, 'CPF deve conter apenas números.')
+    .refine((val) => isValidCPF(val), 'CPF inválido.'),
   birthDate: z
     .string()
     .optional()
     .nullable()
     .or(z.literal('')),
-  active: z.boolean().default(true),
+  status: z.enum(['active', 'inactive', 'blocked']).default('active'),
 });
 
 /** Schema for updating an existing customer. */
 export const updateCustomerSchema = z.object({
   id: z.string().uuid('ID inválido.'),
-  name: z
+  fullName: z
     .string()
     .min(2, 'O nome deve ter no mínimo 2 caracteres.')
     .max(100, 'O nome deve ter no máximo 100 caracteres.')
@@ -121,16 +121,16 @@ export const updateCustomerSchema = z.object({
     .or(z.literal('')),
   cpf: z
     .string()
-    .regex(cpfRegex, 'CPF deve conter 11 dígitos numéricos.')
-    .optional()
-    .nullable()
-    .or(z.literal('')),
+    .length(11, 'CPF deve conter 11 dígitos.')
+    .regex(/^\d{11}$/, 'CPF deve conter apenas números.')
+    .refine((val) => isValidCPF(val), 'CPF inválido.')
+    .optional(),
   birthDate: z
     .string()
     .optional()
     .nullable()
     .or(z.literal('')),
-  active: z.boolean().optional(),
+  status: z.enum(['active', 'inactive', 'blocked']).optional(),
 });
 
 /** Sanitizes optional string fields: empty string → null. */

@@ -2,6 +2,7 @@
  * Service feature — Server Action unit tests (mocked Supabase).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@/lib/supabase/server';
 import {
   createServiceAction,
@@ -9,14 +10,22 @@ import {
   updateServiceAction,
   deleteServiceAction,
 } from '../presentation/actions';
+import type { ActionResponse } from '@/lib/types/action.types';
 
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: vi.fn(),
 }));
 
+/** Helper to safely narrow ActionResponse and access the error field. */
+function getError(result: ActionResponse<unknown>): string {
+  expect(result.success).toBe(false);
+  return (result as { success: false; error: string }).error;
+}
+
 type MockResult = { data: unknown; error: unknown | null };
 
 function createMockChain(result: MockResult) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chain: any = {
     select: vi.fn(() => chain),
     insert: vi.fn(() => chain),
@@ -33,6 +42,7 @@ function createMockChain(result: MockResult) {
     single: vi.fn(() => Promise.resolve(result)),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   chain.then = (resolve: any, reject: any) =>
     Promise.resolve(result).then(resolve, reject);
   return chain;
@@ -62,7 +72,7 @@ function buildMockSupabase(overrides: {
       }
       return chain;
     }),
-  };
+  } as unknown as SupabaseClient;
 }
 
 const TENANT_ID = 'tenant-123e4567-e89b';
@@ -83,7 +93,7 @@ describe('Service Actions (Unit Tests)', () => {
       const result = await listServicesAction();
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você precisa estar autenticado.');
+      expect(getError(result)).toBe('Você precisa estar autenticado.');
     });
 
     it('should return list when authenticated', async () => {
@@ -132,7 +142,7 @@ describe('Service Actions (Unit Tests)', () => {
       const result = await createServiceAction({ name: 'Novo Serviço', price: 50, durationMinutes: 30 });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para cadastrar serviços.');
+      expect(getError(result)).toBe('Você não tem permissão para cadastrar serviços.');
     });
 
     it('should create service when user has management role', async () => {
@@ -177,7 +187,7 @@ describe('Service Actions (Unit Tests)', () => {
       const result = await createServiceAction({ name: 'A', price: 50, durationMinutes: 30 });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('mínimo 2');
+      expect(getError(result)).toContain('mínimo 2');
     });
   });
 
@@ -193,7 +203,7 @@ describe('Service Actions (Unit Tests)', () => {
       const result = await updateServiceAction({ id: ANY_UUID, name: 'Atualizado' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para editar serviços.');
+      expect(getError(result)).toBe('Você não tem permissão para editar serviços.');
     });
 
     it('should update service when user has management role', async () => {
@@ -240,7 +250,7 @@ describe('Service Actions (Unit Tests)', () => {
       const result = await deleteServiceAction(ANY_UUID);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Você não tem permissão para remover serviços.');
+      expect(getError(result)).toBe('Você não tem permissão para remover serviços.');
     });
 
     it('should allow delete for admin role', async () => {

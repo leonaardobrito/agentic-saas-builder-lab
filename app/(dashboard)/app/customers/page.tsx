@@ -7,8 +7,10 @@
 import { listCustomersAction } from '@/features/customers/presentation/actions';
 import { createServerClient } from '@/lib/supabase/server';
 import { getTenantContext } from '@/lib/auth/context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Card, CardContent } from '@/shared/ui/card';
 import { CustomerForm } from '@/features/customers/presentation/components/customer-form';
+import { EmptyState } from '@/shared/ui/empty-state';
+import { Users } from 'lucide-react';
 
 export default async function CustomersPage() {
   const supabase = await createServerClient();
@@ -21,34 +23,53 @@ export default async function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-800">Clientes</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          Clientes
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Gerencie a base de clientes do seu salao.
+        </p>
       </div>
 
       {canManage && <CustomerForm mode="create" />}
 
       {customers.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-slate-500">Nenhum cliente cadastrado.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Users}
+          title="Nenhum cliente cadastrado"
+          description="Comece cadastrando seu primeiro cliente para gerenciar o historico e agendamentos."
+        />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {customers.map((cust) => (
             <Card key={cust.id}>
-              <CardHeader>
-                <CardTitle>{cust.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-500">
-                  {cust.email && `E-mail: ${cust.email} | `}
-                  {cust.phone && `Tel: ${cust.phone} | `}
-                  {cust.cpf && `CPF: ${cust.cpf}`}
-                </p>
-                <p className="text-sm text-slate-500">
-                  Status: {cust.active ? 'Ativo' : 'Inativo'}
-                </p>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                      {cust.fullName}
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      {cust.email && `E-mail: ${cust.email}`}
+                      {cust.email && cust.phone && ' | '}
+                      {cust.phone && `Tel: ${cust.phone}`}
+                      {(cust.email || cust.phone) && cust.cpf && ' | '}
+                      {cust.cpf && `CPF: ${cust.cpf}`}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase whitespace-nowrap ${
+                      cust.status === 'active'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : cust.status === 'blocked'
+                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {cust.status === 'active' ? 'Ativo' : cust.status === 'blocked' ? 'Bloqueado' : 'Inativo'}
+                  </span>
+                </div>
               </CardContent>
             </Card>
           ))}

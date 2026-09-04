@@ -8,9 +8,10 @@
 import { listProfessionalsAction } from '@/features/professionals/presentation/actions';
 import { createServerClient } from '@/lib/supabase/server';
 import { getTenantContext } from '@/lib/auth/context';
-import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Card, CardContent } from '@/shared/ui/card';
 import { ProfessionalForm } from '@/features/professionals/presentation/components/professional-form';
+import { EmptyState } from '@/shared/ui/empty-state';
+import { Users } from 'lucide-react';
 
 export default async function ProfessionalsPage() {
   const supabase = await createServerClient();
@@ -26,36 +27,54 @@ export default async function ProfessionalsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-800">Profissionais</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Profissionais
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Gerencie a equipe do seu salao.
+          </p>
+        </div>
         {canManage && <ProfessionalForm mode="create" />}
       </div>
 
       {professionals.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-slate-500">Nenhum profissional cadastrado.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Users}
+          title="Nenhum profissional cadastrado"
+          description="Cadastre os profissionais do seu salao para comecar a gerenciar agendamentos."
+        />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {professionals.map((prof) => (
             <Card key={prof.id}>
-              <CardHeader>
-                <CardTitle>{prof.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-500">
-                  Status: {prof.active ? 'Ativo' : 'Inativo'}
-                </p>
-                {canDelete && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                  >
-                    {prof.active ? 'Desativar' : 'Ativar'}
-                  </Button>
-                )}
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                      {prof.name}
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase whitespace-nowrap ${
+                        prof.active
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {prof.active ? 'Ativo' : 'Inativo'}
+                    </span>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors whitespace-nowrap select-none"
+                      >
+                        {prof.active ? 'Desativar' : 'Ativar'}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}

@@ -21,12 +21,17 @@ export interface SignUpData {
 
 /**
  * Sign-up Server Action.
- * 
- * Creates a new user, tenant, and membership (owner role).
- * 
+ *
+ * Creates a new user via Supabase Auth, then atomically creates the
+ * tenant + owner membership via a SECURITY DEFINER RPC function.
+ *
+ * The RPC function (`create_tenant_with_owner`) runs with elevated privileges
+ * to bypass RLS during bootstrap, but validates that the user_id matches the
+ * authenticated session (auth.uid()).
+ *
  * @param input - User registration data (email, password, fullName, tenantName, cpf)
  * @returns ActionResponse with user and tenant data or error message
- * 
+ *
  * @example
  * const result = await signUpAction({
  *   email: 'user@example.com',
@@ -42,7 +47,7 @@ export async function signUpAction(
     // 1. Input Validation
     const validated = signUpSchema.parse(input);
 
-    // 2. Create Supabase client
+    // 2. Create Supabase client (uses anon key + session cookies)
     const supabase = await createServerClient();
 
     // 3. Create user in Supabase Auth
@@ -77,58 +82,50 @@ export async function signUpAction(
       };
     }
 
-    // 5. Create tenant
-    const { data: tenantData, error: tenantError } = await supabase
-      .from('tenants')
-      .insert({
-        name: validated.tenantName,
-      })
-      .select('id, name')
-      .single();
+    // 5. Create tenant + owner membership atomically via RPC
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      'create_tenant_with_owner',
+      {
+        p_tenant_name: validated.tenantName,
+        p_user_id: authData.user.id,
+      }
+    );
 
-    if (tenantError) {
-      console.error('SignUpAction tenant error:', tenantError);
-      
-      // Clean up: delete the user if tenant creation fails
-      await supabase.auth.admin.deleteUser(authData.user.id);
+    if (rpcError) {
+      console.error('SignUpAction RPC error:', rpcError);
 
-      if (tenantError.code === '23505') { // Unique constraint violation
+      // Specific error for duplicate tenant name
+      if (rpcError.message?.includes('Tenant name already exists')) {
         return {
           success: false,
           error: 'Este nome de salão já está em uso.',
         };
       }
 
+      // Any other error: the user was created in Auth but the RPC failed.
+      // The RPC does a full rollback (tenant + membership), but the auth user
+      // may remain orphaned. This is logged for monitoring and will be handled
+      // by a cleanup job (out of scope for this PR).
+      console.error(
+        'SignUpAction: orphan user may have been created:',
+        authData.user.id
+      );
       return {
         success: false,
         error: 'Erro ao criar sua conta. Tente novamente.',
       };
     }
 
-    // 6. Create membership (owner role)
-    const { error: membershipError } = await supabase
-      .from('memberships')
-      .insert({
-        user_id: authData.user.id,
-        tenant_id: tenantData.id,
-        role: 'owner',
-        is_active: true,
-      });
-
-    if (membershipError) {
-      console.error('SignUpAction membership error:', membershipError);
-
-      // Clean up: delete tenant and user
-      await supabase.from('tenants').delete().eq('id', tenantData.id);
-      await supabase.auth.admin.deleteUser(authData.user.id);
-
+    if (!rpcData || rpcData.length === 0) {
       return {
         success: false,
         error: 'Erro ao criar sua conta. Tente novamente.',
       };
     }
 
-    // 7. Return success
+    const tenant = rpcData[0];
+
+    // 6. Return success
     return {
       success: true,
       data: {
@@ -137,8 +134,8 @@ export async function signUpAction(
           email: authData.user.email!,
         },
         tenant: {
-          id: tenantData.id,
-          name: tenantData.name,
+          id: tenant.tenant_id,
+          name: tenant.tenant_name,
         },
       },
     };

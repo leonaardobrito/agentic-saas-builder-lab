@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { signInAction } from '@/features/auth/presentation/actions';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -16,12 +17,6 @@ import {
   CardTitle,
 } from '@/shared/ui/card';
 
-/**
- * Página de Login
- * 
- * Permite que usuários façam login com email e senha.
- * Após login bem-sucedido, redireciona para /app/dashboard.
- */
 export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -39,7 +34,6 @@ export default function LoginPage() {
       const result = await signInAction({ email, password });
 
       if (result.success) {
-        // Redirecionar para o dashboard
         router.push('/app/dashboard');
         router.refresh();
       } else {
@@ -49,12 +43,15 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">
+    <Card className="rounded-3xl shadow-2xl shadow-slate-200/40 dark:shadow-rose-950/10">
+      <CardHeader className="space-y-1 text-center">
+        <div className="w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-rose-600/20">
+          <ArrowRight className="w-6 h-6" />
+        </div>
+        <CardTitle className="text-2xl font-bold tracking-tight">
           Entrar no StyleFlow
         </CardTitle>
-        <CardDescription className="text-center">
+        <CardDescription>
           Digite seu e-mail e senha para acessar sua conta
         </CardDescription>
       </CardHeader>
@@ -62,34 +59,46 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="seu@email.com"
-              required
-              disabled={isPending}
-              autoComplete="email"
-              autoFocus
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                <Mail className="w-[18px] h-[18px]" />
+              </div>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="seu@email.com"
+                required
+                disabled={isPending}
+                autoComplete="email"
+                autoFocus
+                className="pl-10"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              disabled={isPending}
-              autoComplete="current-password"
-              minLength={6}
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                <Lock className="w-[18px] h-[18px]" />
+              </div>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                required
+                disabled={isPending}
+                autoComplete="current-password"
+                minLength={6}
+                className="pl-10"
+              />
+            </div>
           </div>
-          
+
           {error && (
             <div
-              className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800"
+              className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400"
               role="alert"
             >
               {error}
@@ -100,17 +109,18 @@ export default function LoginPage() {
             type="submit"
             className="w-full"
             disabled={isPending}
+            size="default"
           >
             {isPending ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-slate-500 text-center">
-          Não tem uma conta?{' '}
+        <div className="text-sm text-slate-500 dark:text-slate-400 text-center">
+          Nao tem uma conta?{' '}
           <Link
             href="/register"
-            className="text-rose-600 hover:text-rose-700 font-medium hover:underline"
+            className="text-rose-600 dark:text-rose-400 hover:text-rose-500 font-bold hover:underline"
           >
             Criar conta
           </Link>

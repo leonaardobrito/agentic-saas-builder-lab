@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { UserPlus } from 'lucide-react';
 import { signUpAction } from '@/features/auth/presentation/actions';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -16,12 +17,6 @@ import {
   CardTitle,
 } from '@/shared/ui/card';
 
-/**
- * Página de Registro
- * 
- * Permite que novos usuários criem uma conta e seu salão.
- * Após registro bem-sucedido, redireciona para /app/dashboard.
- */
 export default function RegisterPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -48,7 +43,6 @@ export default function RegisterPage() {
       });
 
       if (result.success) {
-        // Redirecionar para o dashboard
         router.push('/app/dashboard');
         router.refresh();
       } else {
@@ -58,13 +52,16 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">
+    <Card className="rounded-3xl shadow-2xl shadow-slate-200/40 dark:shadow-rose-950/10">
+      <CardHeader className="space-y-1 text-center">
+        <div className="w-12 h-12 mx-auto mb-2 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-rose-600/20">
+          <UserPlus className="w-6 h-6" />
+        </div>
+        <CardTitle className="text-2xl font-bold tracking-tight">
           Criar Conta
         </CardTitle>
-        <CardDescription className="text-center">
-          Preencha os dados abaixo para criar sua conta e começar a usar o StyleFlow
+        <CardDescription>
+          Preencha os dados abaixo para criar sua conta e comecar a usar o StyleFlow
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -85,12 +82,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tenantName">Nome do Salão</Label>
+            <Label htmlFor="tenantName">Nome do Salao</Label>
             <Input
               id="tenantName"
               name="tenantName"
               type="text"
-              placeholder="Salão da Maria"
+              placeholder="Salao da Maria"
               required
               disabled={isPending}
               autoComplete="organization"
@@ -125,8 +122,8 @@ export default function RegisterPage() {
               maxLength={11}
               pattern="[0-9]{11}"
             />
-            <p className="text-xs text-slate-500">
-              Apenas números, sem pontos ou traços
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Apenas numeros, sem pontos ou tracos
             </p>
           </div>
 
@@ -142,14 +139,14 @@ export default function RegisterPage() {
               autoComplete="new-password"
               minLength={6}
             />
-            <p className="text-xs text-slate-500">
-              Mínimo de 6 caracteres
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Minimo de 6 caracteres
             </p>
           </div>
 
           {error && (
             <div
-              className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800"
+              className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400"
               role="alert"
             >
               {error}
@@ -160,17 +157,18 @@ export default function RegisterPage() {
             type="submit"
             className="w-full"
             disabled={isPending}
+            size="default"
           >
             {isPending ? 'Criando conta...' : 'Criar Conta'}
           </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-slate-500 text-center">
-          Já tem uma conta?{' '}
+        <div className="text-sm text-slate-500 dark:text-slate-400 text-center">
+          Ja tem uma conta?{' '}
           <Link
             href="/login"
-            className="text-rose-600 hover:text-rose-700 font-medium hover:underline"
+            className="text-rose-600 dark:text-rose-400 hover:text-rose-500 font-bold hover:underline"
           >
             Fazer login
           </Link>

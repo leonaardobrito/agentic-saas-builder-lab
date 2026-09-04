@@ -39,25 +39,25 @@ export function CustomerForm({
     setError(null);
 
     const formData = new FormData(event.currentTarget);
-    const name = formData.get('name') as string;
+    const fullName = formData.get('fullName') as string;
     const email = (formData.get('email') as string) || null;
     const phone = (formData.get('phone') as string) || null;
-    const cpf = (formData.get('cpf') as string) || null;
+    const cpf = formData.get('cpf') as string;
     const birthDate = (formData.get('birthDate') as string) || null;
-    const active = formData.get('active') === 'true';
+    const status = (formData.get('status') as string) || 'active';
 
     startTransition(async () => {
       const result =
         mode === 'create'
-          ? await createCustomerAction({ name, email, phone, cpf, birthDate, active })
+          ? await createCustomerAction({ fullName, email, phone, cpf, birthDate, status })
           : await updateCustomerAction({
               id: customer!.id,
-              name,
+              fullName,
               email,
               phone,
               cpf,
               birthDate,
-              active,
+              status,
             });
 
       if (result.success) {
@@ -76,20 +76,20 @@ export function CustomerForm({
         </CardTitle>
         <CardDescription>
           {mode === 'create'
-            ? 'Cadastre um novo cliente para seu salão.'
-            : 'Atualize as informações deste cliente.'}
+            ? 'Cadastre um novo cliente para seu salao.'
+            : 'Atualize as informacoes deste cliente.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
+            <Label htmlFor="fullName">Nome Completo *</Label>
             <Input
-              id="name"
-              name="name"
+              id="fullName"
+              name="fullName"
               type="text"
               placeholder="Maria Silva"
-              defaultValue={customer?.name}
+              defaultValue={customer?.fullName}
               required
               disabled={isPending}
               minLength={2}
@@ -97,7 +97,7 @@ export function CustomerForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input
@@ -124,21 +124,22 @@ export function CustomerForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
+              <Label htmlFor="cpf">CPF *</Label>
               <Input
                 id="cpf"
                 name="cpf"
                 type="text"
                 placeholder="00000000000"
-                defaultValue={customer?.cpf ?? undefined}
+                defaultValue={customer?.cpf}
+                required
                 disabled={isPending}
                 maxLength={11}
                 pattern="[0-9]{11}"
               />
-              <p className="text-xs text-slate-500">
-                Apenas números, sem pontos ou traços
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Apenas numeros, sem pontos ou tracos (11 digitos)
               </p>
             </div>
 
@@ -154,23 +155,24 @@ export function CustomerForm({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              id="active"
-              name="active"
-              type="checkbox"
-              value="true"
-              defaultChecked={customer ? customer.active : true}
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={customer?.status ?? 'active'}
               disabled={isPending}
-            />
-            <Label htmlFor="active" className="text-sm">
-              Ativo
-            </Label>
+              className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-900 dark:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/20 focus-visible:border-rose-600 disabled:pointer-events-none disabled:opacity-50"
+            >
+              <option value="active">Ativo</option>
+              <option value="inactive">Inativo</option>
+              <option value="blocked">Bloqueado</option>
+            </select>
           </div>
 
           {error && (
             <div
-              className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800"
+              className="rounded-2xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400"
               role="alert"
             >
               {error}
