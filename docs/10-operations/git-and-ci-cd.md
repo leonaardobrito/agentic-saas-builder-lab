@@ -378,7 +378,7 @@ agentic-saas-builder-lab/
 ├── README.md
 ├── package.json
 ├── tsconfig.json
-├── vitest.config.ts
+├── vitest.config.mjs
 ├── playwright.config.ts
 └── middleware.ts
 ```

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StyleFlow — SaaS para Salões de Beleza",
-  description: "Plataforma de gestão para salões de beleza, clínicas de estética e barbearias.",
+  title: "StyleFlow — SaaS para Saloes de Beleza",
+  description: "Plataforma de gestao para saloes de beleza, clinicas de estetica e barbearias.",
 };
 
 interface LayoutProps {
@@ -26,8 +26,11 @@ export default function RootLayout({ children }: LayoutProps) {
     <html
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        {children}
+      </body>
     </html>
   );
 }

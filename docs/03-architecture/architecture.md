@@ -171,7 +171,7 @@ styleflow-saas/
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.ts
-├── vitest.config.ts (or jest.config.js)
+├── vitest.config.mjs
 └── playwright.config.ts
 ```
 

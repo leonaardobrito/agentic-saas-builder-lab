@@ -7,8 +7,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    // Remova setupFiles se ele não existir ou se não for necessário
-    // setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./tests/setup.ts'],
     include: ['**/__tests__/**/*.test.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/e2e/**'],
     coverage: {
